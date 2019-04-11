@@ -27,7 +27,80 @@ const uint32_t BUTTON_H = 150;
 const uint32_t BUTTON_BORDER = 2;
 const uint32_t BUTTON_X = ILI9488_LCD_WIDTH/2;
 const uint32_t BUTTON_Y = ILI9488_LCD_HEIGHT/2;
+
+/**
+ * Inicializa ordem do menu
+ * retorna o primeiro ciclo que
+ * deve ser exibido.
+ */
+t_ciclo *initMenuOrder(){
+  c_rapido.previous = &c_enxague;
+  c_rapido.next = &c_diario;
+
+  c_diario.previous = &c_rapido;
+  c_diario.next = &c_pesado;
+
+  c_pesado.previous = &c_diario;
+  c_pesado.next = &c_enxague;
+
+  c_enxague.previous = &c_pesado;
+  c_enxague.next = &c_centrifuga;
+
+  c_centrifuga.previous = &c_enxague;
+  c_centrifuga.next = &c_rapido;
+
+  return(&c_diario);
+}
+
+volatile Bool f_rtt_alarme = false;
+volatile Bool start = false;
+volatile Bool locked = false;
+
+
+static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses);
+
+void RTT_Handler(void)
+{
+	uint32_t ul_status;
+
+	/* Get RTT status */
+	ul_status = rtt_get_status(RTT);
+
+	/* IRQ due to Time has changed */
+	if ((ul_status & RTT_SR_RTTINC) == RTT_SR_RTTINC) {  }
+
+	/* IRQ due to Alarm */
+	if ((ul_status & RTT_SR_ALMS) == RTT_SR_ALMS) {
+		f_rtt_alarme = true;                  // flag RTT alarme
+	}
+}
+
+static float get_time_rtt(){
+	uint ul_previous_time = rtt_read_timer_value(RTT);
+}
+
+static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses)
+{
+	uint32_t ul_previous_time;
+
+	/* Configure RTT for a 1 second tick interrupt */
+	rtt_sel_source(RTT, false);
+	rtt_init(RTT, pllPreScale);
 	
+	ul_previous_time = rtt_read_timer_value(RTT);
+	while (ul_previous_time == rtt_read_timer_value(RTT));
+	
+	rtt_write_alarm_time(RTT, IrqNPulses+ul_previous_time);
+
+	/* Enable RTT interrupt */
+	NVIC_DisableIRQ(RTT_IRQn);
+	NVIC_ClearPendingIRQ(RTT_IRQn);
+	NVIC_SetPriority(RTT_IRQn, 0);
+	NVIC_EnableIRQ(RTT_IRQn);
+	rtt_enable_interrupt(RTT, RTT_MR_ALMIEN);
+}
+
+
 static void configure_lcd(void){
 	/* Initialize display parameter */
 	g_ili9488_display_opt.ul_width = ILI9488_LCD_WIDTH;
@@ -159,9 +232,6 @@ void draw_screen(void) {
 	ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH-1, ILI9488_LCD_HEIGHT-1);
 }
 
-volatile bool start = false;
-volatile bool locked = false;
-
 void draw_button(uint32_t clicked) {
 	static uint32_t last_state = 255; // undefined
 	uint8_t stingLCD[256];
@@ -179,7 +249,7 @@ void draw_button(uint32_t clicked) {
 		ili9488_draw_filled_circle(275, 50,25);
 		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 	}
-	else {
+	else {		
 		if (clicked==3){
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 			ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH, ILI9488_LCD_HEIGHT);
@@ -194,7 +264,6 @@ void draw_button(uint32_t clicked) {
 			else if (last_state==0){
 				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_GREEN));
 				ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y-BUTTON_H/2+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y-BUTTON_BORDER);
-				
 			}
 		}
 		else if(clicked==1) {
@@ -203,15 +272,15 @@ void draw_button(uint32_t clicked) {
 		
 			RTC_init();
 			start = true;
-		
-			} 
+			last_state = clicked;
+		} 
 		else if(clicked == 0) {
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_GREEN));
 			ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y-BUTTON_H/2+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y-BUTTON_BORDER);
 			start = false;
-			
+			last_state = clicked;
 		}
-		last_state = clicked;
+		
 	}
 }
 
@@ -232,11 +301,9 @@ void update_screen(uint32_t tx, uint32_t ty) {
 	if(locked==false){
 		if(tx >= BUTTON_X-BUTTON_W/2 && tx <= BUTTON_X + BUTTON_W/2) {
 			if(ty >= BUTTON_Y-BUTTON_H/2 && ty <= BUTTON_Y) {
-				//draw_button(1);
 				clkd =1;
 			} 
 			else if(ty > BUTTON_Y && ty < BUTTON_Y + BUTTON_H/2) {
-				//draw_button(0);
 				clkd =0;
 			}
 			draw_button(clkd);
@@ -248,15 +315,11 @@ void update_screen(uint32_t tx, uint32_t ty) {
 		if(c%2!=0){
 			if (locked){
 				locked=false;
-				uint8_t stingLCD[256];
-				sprintf(stingLCD, "%d ",clkd);
-				ili9488_draw_string(40, 400, stingLCD);
 			}
 			else{
 				locked=true;
 			}
 			draw_button(3);
-
 		}
 	}
 	
@@ -356,23 +419,36 @@ int main(void)
 	draw_button(0);
 	/* Initialize the mXT touch device */
 	mxt_init(&device);
+    t_ciclo *p_primeiro = initMenuOrder();
+
 	
 	/* Initialize stdio on USART */
 	stdio_serial_init(USART_SERIAL_EXAMPLE, &usart_serial_options);
 
 	printf("\n\rmaXTouch data USART transmitter\n\r");
-		
+	
+	    f_rtt_alarme = true;
+
 
 	while (true) {
-		delay_s(1);
-		/* Check for any pending messages and run message handler if any
-		 * message is found in the queue */
-		if (mxt_is_message_pending(&device)) {
-			mxt_handler(&device);
-		}
-		crono(1);
+		//if(f_rtt_alarme){
+			uint16_t pllPreScale = (int) (((float) 32768) / 4);//delay de 1 s
+			uint32_t irqRTTvalue  = 4;
+			
+			// reinicia RTT para gerar um novo IRQ
+			//RTT_init(pllPreScale, irqRTTvalue);
+			delay_s(1);
+			f_rtt_alarme = false;
+			/* Check for any pending messages and run message handler if any
+			* message is found in the queue */
+			if (mxt_is_message_pending(&device)) {
+				mxt_handler(&device);
+			}
+			crono(1);
 		
-	}
+		//}
+		//pmc_sleep(SAM_PM_SMODE_SLEEP_WFI);
 
+	}
 	return 0;
 }
