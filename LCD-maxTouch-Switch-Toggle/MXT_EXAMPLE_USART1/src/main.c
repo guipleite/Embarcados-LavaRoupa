@@ -162,7 +162,6 @@ void draw_screen(void) {
 volatile bool start = false;
 volatile bool locked = false;
 
-
 void draw_button(uint32_t clicked) {
 	static uint32_t last_state = 255; // undefined
 	uint8_t stingLCD[256];
@@ -181,14 +180,24 @@ void draw_button(uint32_t clicked) {
 		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 	}
 	else {
-		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
-		ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH, ILI9488_LCD_HEIGHT);
-		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
-		ili9488_draw_filled_circle(275, 50,25);
-		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-		ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2, BUTTON_Y-BUTTON_H/2, BUTTON_X+BUTTON_W/2, BUTTON_Y+BUTTON_H/2);
-		
-		if(clicked==1) {
+		if (clicked==3){
+			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
+			ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH, ILI9488_LCD_HEIGHT);
+			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
+			ili9488_draw_filled_circle(275, 50,25);
+			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
+			ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2, BUTTON_Y-BUTTON_H/2, BUTTON_X+BUTTON_W/2, BUTTON_Y+BUTTON_H/2);
+			if(last_state==1) {
+				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
+				ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y+BUTTON_H/2-BUTTON_BORDER);
+			}
+			else if (last_state==0){
+				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_GREEN));
+				ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y-BUTTON_H/2+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y-BUTTON_BORDER);
+				
+			}
+		}
+		else if(clicked==1) {
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
 			ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y+BUTTON_H/2-BUTTON_BORDER);
 		
@@ -196,7 +205,7 @@ void draw_button(uint32_t clicked) {
 			start = true;
 		
 			} 
-		if(clicked == 0) {
+		else if(clicked == 0) {
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_GREEN));
 			ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y-BUTTON_H/2+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y-BUTTON_BORDER);
 			start = false;
