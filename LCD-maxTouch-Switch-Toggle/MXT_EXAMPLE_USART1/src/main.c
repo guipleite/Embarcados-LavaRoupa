@@ -242,6 +242,15 @@ void draw_screen(void) {
 	ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH-1, ILI9488_LCD_HEIGHT-1);
 }
 
+void display_cicle(int x){
+	clear_LCD(200,315);
+	uint8_t stingLCD[256];
+
+	sprintf(stingLCD, "CICLO %d",x);
+	ili9488_draw_string(40, 250, stingLCD);
+	
+}
+
 void draw_button(uint32_t clicked) {
 	static uint32_t last_state = 255; // undefined
 	uint8_t stingLCD[256];
@@ -336,6 +345,7 @@ uint32_t convert_axis_system_y(uint32_t touch_x) {
 
 volatile int c =0;
 volatile int clkd;
+volatile int x =0;
 
 void touch_handler(uint32_t tx, uint32_t ty) {
 	if(locked==false){ 
@@ -344,7 +354,16 @@ void touch_handler(uint32_t tx, uint32_t ty) {
 				selection=false;	
 				draw_button(3);
 			}
+			if(tx >=ARROW_X && tx <= ARROW_X+ARROW_W && ty <= ARROW_Y && ty >= ARROW_Y-ARROW_H){
+				x++;
+				display_cicle(x);
+			}
+			if(tx <=ILI9488_LCD_WIDTH && tx >= ILI9488_LCD_WIDTH-ARROW_W && ty <= ARROW_Y && ty >= ARROW_Y-ARROW_H){
+				x--;
+				display_cicle(x);
+			}			
 		}
+		
 		else{
 			// Botoes de liga desliga lavagem
 			if(tx >= BUTTON_X-BUTTON_W/2 && tx <= BUTTON_X + BUTTON_W/2) {
