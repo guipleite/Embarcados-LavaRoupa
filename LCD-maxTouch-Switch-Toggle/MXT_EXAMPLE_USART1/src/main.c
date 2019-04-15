@@ -6,6 +6,10 @@
 #include "conf_example.h"
 #include "conf_uart_serial.h"
 #include "maquina1.h"
+// #include "_ionicons_svg_md-lock.h"
+// #include "_ionicons_svg_md-time.h"
+// #include "_ionicons_svg_md-unlock.h"
+// #include "_ionicons_svg_md-water.h"
 
 #define MAX_ENTRIES        3
 #define STRING_LENGTH     70
@@ -27,6 +31,11 @@ const uint32_t BUTTON_H = 150;
 const uint32_t BUTTON_BORDER = 2;
 const uint32_t BUTTON_X = ILI9488_LCD_WIDTH/2;
 const uint32_t BUTTON_Y = ILI9488_LCD_HEIGHT/2;
+
+const uint32_t ARROW_W = 50;
+const uint32_t ARROW_H = 100;
+const uint32_t ARROW_X = 0;
+const uint32_t ARROW_Y = 275;
 
 /**
  * Inicializa ordem do menu
@@ -51,16 +60,14 @@ t_ciclo *initMenuOrder(){
 
   return(&c_diario);
 }
-
+// Variaveis boobleanas para indicar os estados
 volatile Bool f_rtt_alarme = false;
 volatile Bool start = false;
 volatile Bool locked = false;
-
+volatile Bool selection = true;
 
 static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses);
-
-void RTT_Handler(void)
-{
+void RTT_Handler(void){
 	uint32_t ul_status;
 
 	/* Get RTT status */
@@ -74,13 +81,10 @@ void RTT_Handler(void)
 		f_rtt_alarme = true;                  // flag RTT alarme
 	}
 }
-
 static float get_time_rtt(){
 	uint ul_previous_time = rtt_read_timer_value(RTT);
 }
-
-static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses)
-{
+static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses){
 	uint32_t ul_previous_time;
 
 	/* Configure RTT for a 1 second tick interrupt */
@@ -99,8 +103,6 @@ static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses)
 	NVIC_EnableIRQ(RTT_IRQn);
 	rtt_enable_interrupt(RTT, RTT_MR_ALMIEN);
 }
-
-
 static void configure_lcd(void){
 	/* Initialize display parameter */
 	g_ili9488_display_opt.ul_width = ILI9488_LCD_WIDTH;
@@ -111,7 +113,6 @@ static void configure_lcd(void){
 	/* Initialize LCD */
 	ili9488_init(&g_ili9488_display_opt);
 }
-
 /**
  * \brief Set maXTouch configuration
  *
@@ -120,8 +121,7 @@ static void configure_lcd(void){
  *
  * \param device Pointer to mxt_device struct
  */
-static void mxt_init(struct mxt_device *device)
-{
+static void mxt_init(struct mxt_device *device){
 	enum status_code status;
 
 	/* T8 configuration object data */
@@ -204,7 +204,6 @@ static void mxt_init(struct mxt_device *device)
 			MXT_GEN_COMMANDPROCESSOR_T6, 0)
 			+ MXT_GEN_COMMANDPROCESSOR_CALIBRATE, 0x01);
 }
-
 void RTC_init(){
 	/* Configura o PMC */
 	pmc_enable_periph_clk(ID_RTC);
@@ -226,7 +225,18 @@ void RTC_init(){
 	rtc_enable_interrupt(RTC,  RTC_IER_ALREN);
 
 }
-
+void clear_LCD(int a, int b){
+	if (locked){
+		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
+		ili9488_draw_filled_rectangle(0, a, ILI9488_LCD_WIDTH-1, b);
+		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
+	}
+	else{
+		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
+		ili9488_draw_filled_rectangle(0, a, ILI9488_LCD_WIDTH-1, b);
+		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
+	}
+}
 void draw_screen(void) {
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 	ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH-1, ILI9488_LCD_HEIGHT-1);
@@ -239,48 +249,76 @@ void draw_button(uint32_t clicked) {
 	if(clicked == last_state) return;
 	
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-	ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2, BUTTON_Y-BUTTON_H/2, BUTTON_X+BUTTON_W/2, BUTTON_Y+BUTTON_H/2);
+	//ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2, BUTTON_Y-BUTTON_H/2, BUTTON_X+BUTTON_W/2, BUTTON_Y+BUTTON_H/2);
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
 	ili9488_draw_filled_circle(275, 50,25);
-	if (locked){
-		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-		ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH, ILI9488_LCD_HEIGHT);
-		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_GREEN));
-		ili9488_draw_filled_circle(275, 50,25);
-		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
-	}
-	else {		
-		if (clicked==3){
-			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
+	
+	if(selection){
+		clear_LCD(0,450);
+		last_state = 1;
+		if (locked){ //Pinta a tela de preto para indicar que esta travado
+			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 			ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH, ILI9488_LCD_HEIGHT);
+			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_GREEN));
+			ili9488_draw_filled_circle(275, 50,25);
+			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
+		}
+		else{
+			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
+			ili9488_draw_filled_rectangle(ARROW_X,ARROW_Y,ARROW_W,ARROW_Y-ARROW_H);
+
+			ili9488_draw_filled_rectangle(ILI9488_LCD_WIDTH,ARROW_Y,ILI9488_LCD_WIDTH-ARROW_W,ARROW_Y-ARROW_H);
+			ili9488_draw_filled_rectangle(100,325,ILI9488_LCD_WIDTH-100,375);
+			
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
 			ili9488_draw_filled_circle(275, 50,25);
+		}
+			
+	}
+	else{
+		if (locked){ //Pinta a tela de preto para indicar que esta travado
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-			ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2, BUTTON_Y-BUTTON_H/2, BUTTON_X+BUTTON_W/2, BUTTON_Y+BUTTON_H/2);
-			if(last_state==1) {
+			ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH, ILI9488_LCD_HEIGHT);
+			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_GREEN));
+			ili9488_draw_filled_circle(275, 50,25);
+			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
+		}
+		else {		
+			if (clicked==3){ //Voltando do estado de Travado
+				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
+				ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH, ILI9488_LCD_HEIGHT);
+				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
+				ili9488_draw_filled_circle(275, 50,25);
+				//ili9488_draw_pixmap(275, 50, 50, 50, image_data__ionicons_svg_mdlock);
+				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
+				ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2, BUTTON_Y-BUTTON_H/2, BUTTON_X+BUTTON_W/2, BUTTON_Y+BUTTON_H/2);
+			
+				if(last_state==1) {
+					ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
+					ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y+BUTTON_H/2-BUTTON_BORDER);
+				}
+				else if (last_state==0){
+					ili9488_set_foreground_color(COLOR_CONVERT(COLOR_GREEN));
+					ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y-BUTTON_H/2+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y-BUTTON_BORDER);
+				}
+			}
+		
+			else if(clicked==1) {
 				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
 				ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y+BUTTON_H/2-BUTTON_BORDER);
-			}
-			else if (last_state==0){
+		
+				RTC_init();
+				start = true;
+				last_state = clicked;
+			} 
+		
+			else if(clicked == 0) {
 				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_GREEN));
 				ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y-BUTTON_H/2+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y-BUTTON_BORDER);
+				start = false;
+				last_state = clicked;
 			}
 		}
-		else if(clicked==1) {
-			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
-			ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y+BUTTON_H/2-BUTTON_BORDER);
-		
-			RTC_init();
-			start = true;
-			last_state = clicked;
-		} 
-		else if(clicked == 0) {
-			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_GREEN));
-			ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y-BUTTON_H/2+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y-BUTTON_BORDER);
-			start = false;
-			last_state = clicked;
-		}
-		
 	}
 }
 
@@ -295,22 +333,33 @@ uint32_t convert_axis_system_y(uint32_t touch_x) {
 	// saida: 0 - 320
 	return ILI9488_LCD_HEIGHT*touch_x/4096;
 }
+
 volatile int c =0;
 volatile int clkd;
-void update_screen(uint32_t tx, uint32_t ty) {
-	if(locked==false){
-		if(tx >= BUTTON_X-BUTTON_W/2 && tx <= BUTTON_X + BUTTON_W/2) {
-			if(ty >= BUTTON_Y-BUTTON_H/2 && ty <= BUTTON_Y) {
-				clkd =1;
-			} 
-			else if(ty > BUTTON_Y && ty < BUTTON_Y + BUTTON_H/2) {
-				clkd =0;
+
+void touch_handler(uint32_t tx, uint32_t ty) {
+	if(locked==false){ 
+		if(selection==true){
+			if(tx >=100 && tx <= ILI9488_LCD_WIDTH-100 && ty >= 325 && ty <= 375) {
+				selection=false;	
+				draw_button(3);
 			}
-			draw_button(clkd);
+		}
+		else{
+			// Botoes de liga desliga lavagem
+			if(tx >= BUTTON_X-BUTTON_W/2 && tx <= BUTTON_X + BUTTON_W/2) {
+				if(ty >= BUTTON_Y-BUTTON_H/2 && ty <= BUTTON_Y) {
+					clkd =1;
+				} 
+				else if(ty > BUTTON_Y && ty < BUTTON_Y + BUTTON_H/2) {
+					clkd =0;
+				}
+				draw_button(clkd);
+			}
 		}
 	}
 	
-	if(tx >=275 && tx <= 315 && ty >= 25 && ty <= 50) {
+	if(tx >=275 && tx <= 315 && ty >= 25 && ty <= 50) { // Botao do Lock
 		c++;
 		if(c%2!=0){
 			if (locked){
@@ -322,7 +371,6 @@ void update_screen(uint32_t tx, uint32_t ty) {
 			draw_button(3);
 		}
 	}
-	
 }
 
 void mxt_handler(struct mxt_device *device)
@@ -353,7 +401,7 @@ void mxt_handler(struct mxt_device *device)
 		sprintf(buf, "Nr: %1d, X:%4d, Y:%4d, Status:0x%2x conv X:%3d Y:%3d\n\r",
 				touch_event.id, touch_event.x, touch_event.y,
 				touch_event.status, conv_x, conv_y);
-		update_screen(conv_x, conv_y);
+		touch_handler(conv_x, conv_y);
 
 		/* Add the new string to the string buffer */
 		strcat(tx_buf, buf);
@@ -368,40 +416,30 @@ void mxt_handler(struct mxt_device *device)
 		usart_serial_write_packet(USART_SERIAL_EXAMPLE, (uint8_t *)tx_buf, strlen(tx_buf));
 	}
 }
-void clear_LCD(int a, int b){
-	if (locked){
-		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-		ili9488_draw_filled_rectangle(0, a, ILI9488_LCD_WIDTH-1, b);
-		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
-	}
-	else{
-		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
-		ili9488_draw_filled_rectangle(0, a, ILI9488_LCD_WIDTH-1, b);
-		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-	}
-}
 
 void crono(int tempo){
 	clear_LCD(390,415);
+	t_ciclo *p_primeiro = initMenuOrder();
 	if (start==true){
 		uint8_t stingLCD[256];
 		
 		rtc_get_time(RTC, &hour, &minu, &seg);
 		sprintf(stingLCD, "%d :%d de %d min.",minu,seg,tempo);
 		ili9488_draw_string(40, 400, stingLCD);
-
+				
 		if(minu == tempo){
 			sprintf(stingLCD, "ACABOU A LAVAGEM SEU CORNO");
-			ili9488_draw_string(5, 350, stingLCD);
+			ili9488_draw_string(5, 455, stingLCD);
+			delay_s(1);
 			start=false;
+			selection=true;
+			draw_button(3);
 		}
 	}
 	else{return;}
 }
-
-
-int main(void)
-{
+ 
+int main(void){
 	struct mxt_device device; /* Device data container */
 
 	/* Initialize the USART configuration struct */
@@ -421,34 +459,30 @@ int main(void)
 	mxt_init(&device);
     t_ciclo *p_primeiro = initMenuOrder();
 
-	
 	/* Initialize stdio on USART */
 	stdio_serial_init(USART_SERIAL_EXAMPLE, &usart_serial_options);
 
 	printf("\n\rmaXTouch data USART transmitter\n\r");
 	
-	    f_rtt_alarme = true;
-
+	f_rtt_alarme = true;
 
 	while (true) {
-		//if(f_rtt_alarme){
+		if(f_rtt_alarme){
 			uint16_t pllPreScale = (int) (((float) 32768) / 4);//delay de 1 s
 			uint32_t irqRTTvalue  = 4;
 			
 			// reinicia RTT para gerar um novo IRQ
-			//RTT_init(pllPreScale, irqRTTvalue);
-			delay_s(1);
+			RTT_init(pllPreScale, irqRTTvalue);
+			
 			f_rtt_alarme = false;
 			/* Check for any pending messages and run message handler if any
 			* message is found in the queue */
 			if (mxt_is_message_pending(&device)) {
 				mxt_handler(&device);
 			}
-			crono(1);
-		
-		//}
+			crono(1);	
+		}
 		//pmc_sleep(SAM_PM_SMODE_SLEEP_WFI);
-
 	}
 	return 0;
 }
