@@ -6,10 +6,26 @@
 #include "conf_example.h"
 #include "conf_uart_serial.h"
 #include "maquina1.h"
-// #include "_ionicons_svg_md-lock.h"
-// #include "_ionicons_svg_md-time.h"
-// #include "_ionicons_svg_md-unlock.h"
-// #include "_ionicons_svg_md-water.h"
+
+typedef struct {
+	const uint8_t *data;
+	uint16_t width;
+	uint16_t height;
+	uint8_t dataSize;
+} tImage;
+
+#include "_ionicons_svg_md-lock.h"
+#include "_ionicons_svg_md-unlock.h"
+#include "a60e3f50683d3063c36bb8f4f08e9ad0.h";
+#include "back.h";
+#include "centrifuge.h";
+#include "fast.h";
+#include "kilograms-weight-.h";
+#include "next.h";
+#include "Washing-Icon-300x280.h";
+#include "washing-machine-icon-22.h";
+#include "left-arrow.h"
+#include "comeca.h"
 
 #define MAX_ENTRIES        3
 #define STRING_LENGTH     70
@@ -24,6 +40,12 @@
 #define MINUTE      0
 #define SECOND      0
 uint32_t hour, minu, seg;
+
+// defines da Porta
+#define DOOR_PIO           PIOC
+#define DOOR_PIO_ID        ID_PIOC
+#define DOOR_PIO_IDX       17u
+#define DOOR_PIO_IDX_MASK  (1u << DOOR_PIO_IDX)
 
 struct ili9488_opt_t g_ili9488_display_opt;
 const uint32_t BUTTON_W = 120;
@@ -65,6 +87,14 @@ volatile Bool f_rtt_alarme = false;
 volatile Bool start = false;
 volatile Bool locked = false;
 volatile Bool selection = true;
+
+void init (){
+	pmc_enable_periph_clk(DOOR_PIO_ID);
+	// configura pino da porta como entrada com um pull-up.
+	pio_set_input(DOOR_PIO_ID,DOOR_PIO_IDX_MASK,PIO_DEFAULT);
+	// ativa pullup
+	pio_pull_up(DOOR_PIO_ID, DOOR_PIO_IDX_MASK, 1);
+}
 
 static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses);
 void RTT_Handler(void){
@@ -242,6 +272,8 @@ void draw_screen(void) {
 	ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH-1, ILI9488_LCD_HEIGHT-1);
 }
 
+//volatile t_ciclo firstC = initMenuOrder();
+
 void display_cicle(int x){
 	clear_LCD(200,315);
 	uint8_t stingLCD[256];
@@ -258,70 +290,90 @@ void draw_button(uint32_t clicked) {
 	if(clicked == last_state) return;
 	
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-	//ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2, BUTTON_Y-BUTTON_H/2, BUTTON_X+BUTTON_W/2, BUTTON_Y+BUTTON_H/2);
-	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
-	ili9488_draw_filled_circle(275, 50,25);
-	
+
+	ili9488_draw_pixmap(250,25,_ionicons_svg_mdlock.width,_ionicons_svg_mdlock.height,_ionicons_svg_mdlock.data);
+
 	if(selection){
 		clear_LCD(0,450);
 		last_state = 1;
 		if (locked){ //Pinta a tela de preto para indicar que esta travado
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 			ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH, ILI9488_LCD_HEIGHT);
-			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_GREEN));
-			ili9488_draw_filled_circle(275, 50,25);
+			
+			ili9488_draw_pixmap(250,25,_ionicons_svg_mdunlock.width,_ionicons_svg_mdunlock.height,_ionicons_svg_mdunlock.data);
+
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 		}
 		else{
-			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-			ili9488_draw_filled_rectangle(ARROW_X,ARROW_Y,ARROW_W,ARROW_Y-ARROW_H);
+			ili9488_draw_pixmap(ARROW_X,ARROW_Y-ARROW_H,back.width,back.height,back.data);
 
-			ili9488_draw_filled_rectangle(ILI9488_LCD_WIDTH,ARROW_Y,ILI9488_LCD_WIDTH-ARROW_W,ARROW_Y-ARROW_H);
-			ili9488_draw_filled_rectangle(100,325,ILI9488_LCD_WIDTH-100,375);
-			
-			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
-			ili9488_draw_filled_circle(275, 50,25);
+			ili9488_draw_pixmap(ILI9488_LCD_WIDTH-ARROW_W,ARROW_Y-ARROW_H,next.width,next.height,next.data);
+			ili9488_draw_pixmap(100,325,comeca.width,comeca.height,comeca.data);
+
+			//ili9488_draw_filled_rectangle(100,325,ILI9488_LCD_WIDTH-100,375);
+
+			ili9488_draw_pixmap(250,25,_ionicons_svg_mdlock.width,_ionicons_svg_mdlock.height,_ionicons_svg_mdlock.data);
 		}
-			
 	}
+	
 	else{
 		if (locked){ //Pinta a tela de preto para indicar que esta travado
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 			ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH, ILI9488_LCD_HEIGHT);
-			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_GREEN));
-			ili9488_draw_filled_circle(275, 50,25);
+			
+			ili9488_draw_pixmap(250,25,_ionicons_svg_mdunlock.width,_ionicons_svg_mdunlock.height,_ionicons_svg_mdunlock.data);
+
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 		}
-		else {		
-			if (clicked==3){ //Voltando do estado de Travado
+		else {	
+			ili9488_draw_pixmap(25,25,leftarrow.width,leftarrow.height,leftarrow.data);
+			if (clicked==3){ //Voltando de um estado 
+				ili9488_draw_pixmap(25,25,leftarrow.width,leftarrow.height,leftarrow.data);
+
 				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 				ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH, ILI9488_LCD_HEIGHT);
-				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
-				ili9488_draw_filled_circle(275, 50,25);
-				//ili9488_draw_pixmap(275, 50, 50, 50, image_data__ionicons_svg_mdlock);
+	
+				ili9488_draw_pixmap(250,25,_ionicons_svg_mdlock.width,_ionicons_svg_mdlock.height,_ionicons_svg_mdlock.data);
+
 				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 				ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2, BUTTON_Y-BUTTON_H/2, BUTTON_X+BUTTON_W/2, BUTTON_Y+BUTTON_H/2);
-			
+				
 				if(last_state==1) {
 					ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
 					ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y+BUTTON_H/2-BUTTON_BORDER);
 				}
 				else if (last_state==0){
+					ili9488_draw_pixmap(25,25,leftarrow.width,leftarrow.height,leftarrow.data);
 					ili9488_set_foreground_color(COLOR_CONVERT(COLOR_GREEN));
 					ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y-BUTTON_H/2+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y-BUTTON_BORDER);
 				}
 			}
 		
 			else if(clicked==1) {
-				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
-				ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y+BUTTON_H/2-BUTTON_BORDER);
+				if(pio_get(DOOR_PIO,PIO_INPUT ,DOOR_PIO_IDX_MASK)==0){
+					
+					ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
+					ili9488_draw_filled_rectangle((ILI9488_LCD_WIDTH/2)-25,29,(ILI9488_LCD_WIDTH/2)-25+a60e3f50683d3063c36bb8f4f08e9ad0.width,29+a60e3f50683d3063c36bb8f4f08e9ad0.height);
+					ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
+					ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2, BUTTON_Y-BUTTON_H/2, BUTTON_X+BUTTON_W/2, BUTTON_Y+BUTTON_H/2);
+					ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
+					ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y+BUTTON_H/2-BUTTON_BORDER);
 		
-				RTC_init();
-				start = true;
-				last_state = clicked;
+					RTC_init();
+					start = true;
+					last_state = clicked;
+					ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
+					ili9488_draw_filled_rectangle(25,25,25+leftarrow.width,25+leftarrow.height);
+				}
+				else{
+					ili9488_draw_pixmap((ILI9488_LCD_WIDTH/2)-25,29,a60e3f50683d3063c36bb8f4f08e9ad0.width,a60e3f50683d3063c36bb8f4f08e9ad0.height,a60e3f50683d3063c36bb8f4f08e9ad0.data);
+				}
+				
 			} 
 		
 			else if(clicked == 0) {
+				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
+				ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2, BUTTON_Y-BUTTON_H/2, BUTTON_X+BUTTON_W/2, BUTTON_Y+BUTTON_H/2);
 				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_GREEN));
 				ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y-BUTTON_H/2+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y-BUTTON_BORDER);
 				start = false;
@@ -374,6 +426,13 @@ void touch_handler(uint32_t tx, uint32_t ty) {
 					clkd =0;
 				}
 				draw_button(clkd);
+			}
+			//Botao de voltar
+			
+			if(tx>=25 && ty >= 25 && tx <= 25+leftarrow.width && ty <=25+leftarrow.height && (start==false)){
+				//start=false;
+				selection=true;
+				draw_button(3);
 			}
 		}
 	}
@@ -468,20 +527,20 @@ int main(void){
 		.paritytype   = USART_SERIAL_PARITY,
 		.stopbits     = USART_SERIAL_STOP_BIT
 	};
-
+	init();
 	sysclk_init(); /* Initialize system clocks */
 	board_init();  /* Initialize board */
 	configure_lcd();
 	draw_screen();
 	draw_button(0);
-	/* Initialize the mXT touch device */
-	mxt_init(&device);
-    t_ciclo *p_primeiro = initMenuOrder();
-
+	mxt_init(&device);	/* Initialize the mXT touch device */
+	
 	/* Initialize stdio on USART */
 	stdio_serial_init(USART_SERIAL_EXAMPLE, &usart_serial_options);
 
 	printf("\n\rmaXTouch data USART transmitter\n\r");
+	
+	t_ciclo *p_primeiro = initMenuOrder();
 	
 	f_rtt_alarme = true;
 

@@ -294,7 +294,7 @@
       </framework-data>
     </AsfFrameworkConfig>
     <avrtool>com.atmel.avrdbg.tool.edbg</avrtool>
-    <avrtoolserialnumber>ATML2637010000000000</avrtoolserialnumber>
+    <avrtoolserialnumber>ATML2637010000000004</avrtoolserialnumber>
     <avrdeviceexpectedsignature>0xA1020E01</avrdeviceexpectedsignature>
     <avrtoolinterface>SWD</avrtoolinterface>
     <com_atmel_avrdbg_tool_edbg>
@@ -305,7 +305,7 @@
         <InterfaceName>SWD</InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.edbg</ToolType>
-      <ToolNumber>ATML2637010000000000</ToolNumber>
+      <ToolNumber>ATML2637010000000004</ToolNumber>
       <ToolName>EDBG</ToolName>
     </com_atmel_avrdbg_tool_edbg>
     <avrtoolinterfaceclock>2000000</avrtoolinterfaceclock>
@@ -700,6 +700,36 @@
     <Folder Include="src\config\" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\a60e3f50683d3063c36bb8f4f08e9ad0.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\back.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\centrifuge.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\comeca.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\fast.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\kilograms-weight-.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\left-arrow.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\next.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\Washing-Icon-300x280.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\washing-machine-icon-22.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\_ionicons_svg_md-lock.h">
       <SubType>compile</SubType>
     </Compile>

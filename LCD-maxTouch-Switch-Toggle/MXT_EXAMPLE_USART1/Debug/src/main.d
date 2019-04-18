@@ -183,7 +183,12 @@ src/main.d src/main.o: ../src/main.c ../src/asf.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-none-eabi\include\xlocale.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-none-eabi\include\sys\string.h \
  ../src/config/conf_board.h ../src/config/conf_example.h \
- ../src/maquina1.h
+ ../src/maquina1.h ../src/_ionicons_svg_md-lock.h \
+ ../src/_ionicons_svg_md-unlock.h \
+ ../src/a60e3f50683d3063c36bb8f4f08e9ad0.h ../src/back.h \
+ ../src/centrifuge.h ../src/fast.h ../src/kilograms-weight-.h \
+ ../src/next.h ../src/Washing-Icon-300x280.h \
+ ../src/washing-machine-icon-22.h ../src/left-arrow.h ../src/comeca.h
 
 ../src/asf.h:
 
@@ -576,3 +581,27 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 ../src/config/conf_example.h:
 
 ../src/maquina1.h:
+
+../src/_ionicons_svg_md-lock.h:
+
+../src/_ionicons_svg_md-unlock.h:
+
+../src/a60e3f50683d3063c36bb8f4f08e9ad0.h:
+
+../src/back.h:
+
+../src/centrifuge.h:
+
+../src/fast.h:
+
+../src/kilograms-weight-.h:
+
+../src/next.h:
+
+../src/Washing-Icon-300x280.h:
+
+../src/washing-machine-icon-22.h:
+
+../src/left-arrow.h:
+
+../src/comeca.h:
