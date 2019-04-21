@@ -1,3 +1,13 @@
+/**
+ * 5 semestre - Eng. da Computa??o - Insper
+  ** APS 2
+  ** Entrega realizada por:
+  ** 
+  **  - Guilherme Leite - guilhermepl3@al.insper.edu.br-
+  **
+  ** 
+ **/
+
 #include <asf.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -28,6 +38,12 @@ uint32_t hour, minu, seg;
 #define DOOR_PIO_IDX       17u
 #define DOOR_PIO_IDX_MASK  (1u << DOOR_PIO_IDX)
 
+// Configurando Led
+#define LED_PIO           PIOC                  // periferico que controla o LED
+#define LED_PIO_ID        12                    // ID do perif?rico PIOC (controla LED)
+#define LED_PIO_IDX       8u                    // ID do LED no PIO
+#define LED_PIO_IDX_MASK  (1u << LED_PIO_IDX)   // Mascara para CONTROLARMOS o LED
+
 // LCD struct
 struct ili9488_opt_t g_ili9488_display_opt;
 
@@ -36,6 +52,7 @@ struct ili9488_opt_t g_ili9488_display_opt;
  * retorna o primeiro ciclo que
  * deve ser exibido.
  */
+t_ciclo *cicle ;
 
 t_ciclo *initMenuOrder(){
 	c_rapido.previous = &c_centrifuga;
@@ -56,22 +73,11 @@ t_ciclo *initMenuOrder(){
 	return(&c_diario);
 }
 
-t_ciclo *cicle ;
-
- 
 // Variaveis boobleanas para indicar os estados
 volatile Bool f_rtt_alarme = false;
 volatile Bool start = false;
 volatile Bool locked = false;
 volatile Bool selection = true;
-
-void init (){
-	pmc_enable_periph_clk(DOOR_PIO_ID);
-	// configura pino da porta como entrada com um pull-up.
-	pio_set_input(DOOR_PIO_ID,DOOR_PIO_IDX_MASK,PIO_DEFAULT);
-	// ativa pullup
-	pio_pull_up(DOOR_PIO_ID, DOOR_PIO_IDX_MASK, 1);
-}
 
 static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses);
 
@@ -253,18 +259,14 @@ void clear_LCD(int a, int b){
 
 void display_cicle(void){
 	
-	//cicle = initMenuOrder();
-
-	
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 	ili9488_draw_filled_rectangle(ARROW_X+ARROW_W, BOX_Y, ILI9488_LCD_WIDTH-ARROW_W, BOX_H);
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 	uint8_t stingLCD[256];
 	
-	ili9488_draw_pixmap(ICON_X,ICON_Y,100,100,cicle->image->data);
+	ili9488_draw_pixmap(ICON_X,ICON_Y,100,100,c_rapido.image->data);
 	
-	ili9488_draw_string(LABEL_X, LABEL_Y,  cicle->nome);
-	
+	ili9488_draw_string(LABEL_X, LABEL_Y,  c_rapido.nome);
 }
 
 void select_screen(void){
@@ -291,7 +293,6 @@ void draw_button(uint32_t clicked) {
 	
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 	
-	
 	if(selection==false){
 		if (locked){ //Pinta a tela de preto para indicar que esta travado
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
@@ -300,9 +301,13 @@ void draw_button(uint32_t clicked) {
 			ili9488_draw_pixmap(LOCK_X,LOCK_Y,_ionicons_svg_mdunlock.width,_ionicons_svg_mdunlock.height,_ionicons_svg_mdunlock.data);
 
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
+			ili9488_draw_string(LABEL_X, LABEL_Y+10,  c_rapido.nome);
+
 		}
 		else {	
 			ili9488_draw_pixmap(BACK_X,BACK_Y,leftarrow.width,leftarrow.height,leftarrow.data);
+			ili9488_draw_string(LABEL_X, LABEL_Y+10,  c_rapido.nome);
+
 			if (clicked==3){ //Voltando de um estado 
 				ili9488_draw_pixmap(BACK_X,BACK_Y,leftarrow.width,leftarrow.height,leftarrow.data);;
 
@@ -313,6 +318,8 @@ void draw_button(uint32_t clicked) {
 
 				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 				ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2, BUTTON_Y-BUTTON_H/2, BUTTON_X+BUTTON_W/2, BUTTON_Y+BUTTON_H/2);
+				ili9488_draw_string(LABEL_X, LABEL_Y+10,  c_rapido.nome);
+
 				
 				if(last_state==1) {
 					ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
@@ -373,6 +380,17 @@ uint32_t convert_axis_system_y(uint32_t touch_x) {
 volatile int c = 0;
 volatile int clkd;
 
+volatile int sig = 0;
+
+void start_wash(int sig){
+	if (sig){
+		pio_clear(LED_PIO,LED_PIO_IDX_MASK); // Aciona as interfaces da maquina
+	}
+	else{
+		pio_set(LED_PIO,LED_PIO_IDX_MASK);
+	}
+}
+
 void touch_handler(uint32_t tx, uint32_t ty) {
 	if(selection==true){
 		if(tx >=100 && tx <= ILI9488_LCD_WIDTH-100 && ty >= 325 && ty <= 375) {
@@ -380,11 +398,11 @@ void touch_handler(uint32_t tx, uint32_t ty) {
 			draw_button(3);
 		}
 		if(tx >=ARROW_X && tx <= ARROW_X+ARROW_W && ty <= ARROW_Y && ty >= ARROW_Y-ARROW_H){
-			cicle = cicle->next;
+			cicle = c_rapido.next;
 			display_cicle();
 		}
 		if(tx <=ILI9488_LCD_WIDTH && tx >= ILI9488_LCD_WIDTH-ARROW_W && ty <= ARROW_Y && ty >= ARROW_Y-ARROW_H){
-			cicle = cicle->previous;
+			cicle = c_rapido.previous;
 			display_cicle();
 		}
 	}
@@ -399,12 +417,15 @@ void touch_handler(uint32_t tx, uint32_t ty) {
 				else if(ty > BUTTON_Y && ty < BUTTON_Y + BUTTON_H/2) {
 					clkd =0;
 				}
+				start_wash(clkd);
+				pio_clear(LED_PIO,LED_PIO_IDX_MASK);
 				draw_button(clkd);
 			}
 			//Botao de voltar
 			
 			if(tx>=BACK_X && ty >= BACK_Y && tx <= BACK_X+leftarrow.width && ty <=BACK_Y+leftarrow.height && (start==false)){
 				selection=true;
+				start_wash(0);
 				select_screen();
 			}
 		}
@@ -452,6 +473,7 @@ void mxt_handler(struct mxt_device *device)
 		sprintf(buf, "Nr: %1d, X:%4d, Y:%4d, Status:0x%2x conv X:%3d Y:%3d\n\r",
 				touch_event.id, touch_event.x, touch_event.y,
 				touch_event.status, conv_x, conv_y);
+
 		touch_handler(conv_x, conv_y);
 
 		/* Add the new string to the string buffer */
@@ -477,21 +499,41 @@ void crono(int tempo){
 		rtc_get_time(RTC, &hour, &minu, &seg);
 		sprintf(stingLCD, "%d :%d de %d min.",minu,seg,tempo);
 		ili9488_draw_string(CLOCK_X, CLOCK_Y, stingLCD);
-				
+		c=0;		
 		if(minu == tempo){
-			sprintf(stingLCD, "ACABOU A LAVAGEM SEU CORNO");
+			sprintf(stingLCD, "ACABOU A LAVAGEM");
 			ili9488_draw_string(WARN_X, WARN_Y, stingLCD);
 			delay_s(1);
 			start=false;
 			selection=true;
+			start_wash(0);
 			last_state = 0;
 
-			draw_button(3);
+			display_cicle();
 		}
 	}
 	else{return;}
 }
- 
+
+void init (){
+	sysclk_init(); /* Initialize system clocks */
+	pmc_enable_periph_clk(DOOR_PIO_ID);
+	// configura pino da porta como entrada com um pull-up.
+	pio_set_input(DOOR_PIO_ID,DOOR_PIO_IDX_MASK,PIO_DEFAULT);
+	// ativa pullup
+	pio_pull_up(DOOR_PIO_ID, DOOR_PIO_IDX_MASK, 1);
+	
+	// Ativa o PIO na qual o LED foi conectado
+	// para que possamos controlar o LED.
+	pmc_enable_periph_clk(LED_PIO_ID);
+	//Inicializa PC8 como sa?da
+	pio_set_output(LED_PIO, LED_PIO_IDX_MASK, 1, 0, 0);
+    pio_clear(LED_PIO,LED_PIO_IDX_MASK);
+	
+	board_init();  /* Initialize board */
+	configure_lcd();
+}
+
 int main(void){
 	struct mxt_device device; /* Device data container */
 
@@ -503,13 +545,7 @@ int main(void){
 		.stopbits     = USART_SERIAL_STOP_BIT
 	};
 	init();
-	sysclk_init(); /* Initialize system clocks */
-	board_init();  /* Initialize board */
-	configure_lcd();
-		
-	select_screen();
-	
-	//draw_button(0);
+
 	mxt_init(&device);	/* Initialize the mXT touch device */
 	
 	/* Initialize stdio on USART */
@@ -517,8 +553,11 @@ int main(void){
 
 	printf("\n\rmaXTouch data USART transmitter\n\r");
 		
+	//cicle = initMenuOrder();
+		
+	select_screen();
+	
 	f_rtt_alarme = true;
-
 
 	display_cicle();
 
@@ -536,7 +575,9 @@ int main(void){
 			if (mxt_is_message_pending(&device)) {
 				mxt_handler(&device);
 			}
-			crono(((cicle->enxagueTempo)*(cicle->enxagueQnt))+cicle->centrifugacaoTempo);	
+
+			crono((((c_rapido.enxagueTempo)*(c_rapido.enxagueQnt))+c_rapido.centrifugacaoTempo)+
+			(0.2*c_rapido.heavy*(((c_rapido.enxagueTempo)*(c_rapido.enxagueQnt))+c_rapido.centrifugacaoTempo)));	
 		}
 		//pmc_sleep(SAM_PM_SMODE_SLEEP_WFI);
 	}
