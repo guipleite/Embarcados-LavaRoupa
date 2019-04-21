@@ -715,10 +715,16 @@
     <Compile Include="src\fast.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\interface.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\kilograms-weight-.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\left-arrow.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\maquina1.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\next.h">

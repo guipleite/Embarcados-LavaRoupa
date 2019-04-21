@@ -5,7 +5,6 @@
 #include "conf_board.h"
 #include "conf_example.h"
 #include "conf_uart_serial.h"
-#include "maquina1.h"
 
 typedef struct {
 	const uint8_t *data;
@@ -14,18 +13,7 @@ typedef struct {
 	uint8_t dataSize;
 } tImage;
 
-#include "_ionicons_svg_md-lock.h"
-#include "_ionicons_svg_md-unlock.h"
-#include "a60e3f50683d3063c36bb8f4f08e9ad0.h";
-#include "back.h";
-#include "centrifuge.h";
-#include "fast.h";
-#include "kilograms-weight-.h";
-#include "next.h";
-#include "Washing-Icon-300x280.h";
-#include "washing-machine-icon-22.h";
-#include "left-arrow.h"
-#include "comeca.h"
+#include "maquina1.h"
 
 #define MAX_ENTRIES        3
 #define STRING_LENGTH     70
@@ -48,40 +36,37 @@ uint32_t hour, minu, seg;
 #define DOOR_PIO_IDX_MASK  (1u << DOOR_PIO_IDX)
 
 struct ili9488_opt_t g_ili9488_display_opt;
-const uint32_t BUTTON_W = 120;
-const uint32_t BUTTON_H = 150;
-const uint32_t BUTTON_BORDER = 2;
-const uint32_t BUTTON_X = ILI9488_LCD_WIDTH/2;
-const uint32_t BUTTON_Y = ILI9488_LCD_HEIGHT/2;
-
-const uint32_t ARROW_W = 50;
-const uint32_t ARROW_H = 100;
-const uint32_t ARROW_X = 0;
-const uint32_t ARROW_Y = 275;
 
 /**
  * Inicializa ordem do menu
  * retorna o primeiro ciclo que
  * deve ser exibido.
  */
+
+
 t_ciclo *initMenuOrder(){
-  c_rapido.previous = &c_enxague;
-  c_rapido.next = &c_diario;
+	c_rapido.previous = &c_centrifuga;
+	c_rapido.next = &c_diario;
 
-  c_diario.previous = &c_rapido;
-  c_diario.next = &c_pesado;
+	c_diario.previous = &c_rapido;
+	c_diario.next = &c_pesado;
 
-  c_pesado.previous = &c_diario;
-  c_pesado.next = &c_enxague;
+	c_pesado.previous = &c_diario;
+	c_pesado.next = &c_enxague;
 
-  c_enxague.previous = &c_pesado;
-  c_enxague.next = &c_centrifuga;
+	c_enxague.previous = &c_pesado;
+	c_enxague.next = &c_centrifuga;
 
-  c_centrifuga.previous = &c_enxague;
-  c_centrifuga.next = &c_rapido;
+	c_centrifuga.previous = &c_enxague;
+	c_centrifuga.next = &c_rapido;
 
-  return(&c_diario);
+	return(&c_diario);
 }
+  
+
+t_ciclo *p_primeiro ;
+
+
 // Variaveis boobleanas para indicar os estados
 volatile Bool f_rtt_alarme = false;
 volatile Bool start = false;
@@ -97,6 +82,7 @@ void init (){
 }
 
 static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses);
+
 void RTT_Handler(void){
 	uint32_t ul_status;
 
@@ -111,9 +97,11 @@ void RTT_Handler(void){
 		f_rtt_alarme = true;                  // flag RTT alarme
 	}
 }
+
 static float get_time_rtt(){
 	uint ul_previous_time = rtt_read_timer_value(RTT);
 }
+
 static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses){
 	uint32_t ul_previous_time;
 
@@ -133,6 +121,7 @@ static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses){
 	NVIC_EnableIRQ(RTT_IRQn);
 	rtt_enable_interrupt(RTT, RTT_MR_ALMIEN);
 }
+
 static void configure_lcd(void){
 	/* Initialize display parameter */
 	g_ili9488_display_opt.ul_width = ILI9488_LCD_WIDTH;
@@ -234,6 +223,7 @@ static void mxt_init(struct mxt_device *device){
 			MXT_GEN_COMMANDPROCESSOR_T6, 0)
 			+ MXT_GEN_COMMANDPROCESSOR_CALIBRATE, 0x01);
 }
+
 void RTC_init(){
 	/* Configura o PMC */
 	pmc_enable_periph_clk(ID_RTC);
@@ -255,6 +245,7 @@ void RTC_init(){
 	rtc_enable_interrupt(RTC,  RTC_IER_ALREN);
 
 }
+
 void clear_LCD(int a, int b){
 	if (locked){
 		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
@@ -267,31 +258,35 @@ void clear_LCD(int a, int b){
 		ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 	}
 }
+
 void draw_screen(void) {
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 	ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH-1, ILI9488_LCD_HEIGHT-1);
 }
 
-//volatile t_ciclo firstC = initMenuOrder();
-
-void display_cicle(int x){
-	clear_LCD(200,315);
+void display_cicle(void){
+	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
+	ili9488_draw_filled_rectangle(ARROW_X+ARROW_W, BOX_Y, ILI9488_LCD_WIDTH-ARROW_W, BOX_H);
+	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));	
 	uint8_t stingLCD[256];
-
-	sprintf(stingLCD, "CICLO %d",x);
-	ili9488_draw_string(40, 250, stingLCD);
+	
+	ili9488_draw_pixmap(ICON_X,ICON_Y,100,100,p_primeiro->img->data);
+	
+	ili9488_draw_string(LABEL_X, LABEL_Y,  p_primeiro->nome);
 	
 }
 
+volatile static uint32_t last_state = 255; // undefineds
+
 void draw_button(uint32_t clicked) {
-	static uint32_t last_state = 255; // undefined
+	
 	uint8_t stingLCD[256];
 
 	if(clicked == last_state) return;
 	
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-
-	ili9488_draw_pixmap(250,25,_ionicons_svg_mdlock.width,_ionicons_svg_mdlock.height,_ionicons_svg_mdlock.data);
+	
+	ili9488_draw_pixmap(LOCK_X,LOCK_Y,_ionicons_svg_mdlock.width,_ionicons_svg_mdlock.height,_ionicons_svg_mdlock.data);
 
 	if(selection){
 		clear_LCD(0,450);
@@ -300,40 +295,40 @@ void draw_button(uint32_t clicked) {
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 			ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH, ILI9488_LCD_HEIGHT);
 			
-			ili9488_draw_pixmap(250,25,_ionicons_svg_mdunlock.width,_ionicons_svg_mdunlock.height,_ionicons_svg_mdunlock.data);
+			ili9488_draw_pixmap(LOCK_X,LOCK_Y,_ionicons_svg_mdunlock.width,_ionicons_svg_mdunlock.height,_ionicons_svg_mdunlock.data);
 
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 		}
-		else{
+		else{		
+			display_cicle();
+
 			ili9488_draw_pixmap(ARROW_X,ARROW_Y-ARROW_H,back.width,back.height,back.data);
 
 			ili9488_draw_pixmap(ILI9488_LCD_WIDTH-ARROW_W,ARROW_Y-ARROW_H,next.width,next.height,next.data);
-			ili9488_draw_pixmap(100,325,comeca.width,comeca.height,comeca.data);
+			ili9488_draw_pixmap(START_X,START_Y,comeca.width,comeca.height,comeca.data);
 
-			//ili9488_draw_filled_rectangle(100,325,ILI9488_LCD_WIDTH-100,375);
-
-			ili9488_draw_pixmap(250,25,_ionicons_svg_mdlock.width,_ionicons_svg_mdlock.height,_ionicons_svg_mdlock.data);
+			ili9488_draw_pixmap(LOCK_X,LOCK_Y,_ionicons_svg_mdlock.width,_ionicons_svg_mdlock.height,_ionicons_svg_mdlock.data);
 		}
 	}
-	
+
 	else{
 		if (locked){ //Pinta a tela de preto para indicar que esta travado
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 			ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH, ILI9488_LCD_HEIGHT);
 			
-			ili9488_draw_pixmap(250,25,_ionicons_svg_mdunlock.width,_ionicons_svg_mdunlock.height,_ionicons_svg_mdunlock.data);
+			ili9488_draw_pixmap(LOCK_X,LOCK_Y,_ionicons_svg_mdunlock.width,_ionicons_svg_mdunlock.height,_ionicons_svg_mdunlock.data);
 
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 		}
 		else {	
-			ili9488_draw_pixmap(25,25,leftarrow.width,leftarrow.height,leftarrow.data);
+			ili9488_draw_pixmap(BACK_X,BACK_Y,leftarrow.width,leftarrow.height,leftarrow.data);
 			if (clicked==3){ //Voltando de um estado 
-				ili9488_draw_pixmap(25,25,leftarrow.width,leftarrow.height,leftarrow.data);
+				ili9488_draw_pixmap(BACK_X,BACK_Y,leftarrow.width,leftarrow.height,leftarrow.data);;
 
 				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 				ili9488_draw_filled_rectangle(0, 0, ILI9488_LCD_WIDTH, ILI9488_LCD_HEIGHT);
 	
-				ili9488_draw_pixmap(250,25,_ionicons_svg_mdlock.width,_ionicons_svg_mdlock.height,_ionicons_svg_mdlock.data);
+				ili9488_draw_pixmap(LOCK_X,LOCK_Y,_ionicons_svg_mdlock.width,_ionicons_svg_mdlock.height,_ionicons_svg_mdlock.data);
 
 				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 				ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2, BUTTON_Y-BUTTON_H/2, BUTTON_X+BUTTON_W/2, BUTTON_Y+BUTTON_H/2);
@@ -343,7 +338,7 @@ void draw_button(uint32_t clicked) {
 					ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y+BUTTON_H/2-BUTTON_BORDER);
 				}
 				else if (last_state==0){
-					ili9488_draw_pixmap(25,25,leftarrow.width,leftarrow.height,leftarrow.data);
+					ili9488_draw_pixmap(BACK_X,BACK_Y,leftarrow.width,leftarrow.height,leftarrow.data);
 					ili9488_set_foreground_color(COLOR_CONVERT(COLOR_GREEN));
 					ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2+BUTTON_BORDER, BUTTON_Y-BUTTON_H/2+BUTTON_BORDER, BUTTON_X+BUTTON_W/2-BUTTON_BORDER, BUTTON_Y-BUTTON_BORDER);
 				}
@@ -353,7 +348,7 @@ void draw_button(uint32_t clicked) {
 				if(pio_get(DOOR_PIO,PIO_INPUT ,DOOR_PIO_IDX_MASK)==0){
 					
 					ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
-					ili9488_draw_filled_rectangle((ILI9488_LCD_WIDTH/2)-25,29,(ILI9488_LCD_WIDTH/2)-25+a60e3f50683d3063c36bb8f4f08e9ad0.width,29+a60e3f50683d3063c36bb8f4f08e9ad0.height);
+					ili9488_draw_filled_rectangle(DOOR_X,DOOR_Y,(ILI9488_LCD_WIDTH/2)-25+a60e3f50683d3063c36bb8f4f08e9ad0.width,29+a60e3f50683d3063c36bb8f4f08e9ad0.height);
 					ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 					ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2, BUTTON_Y-BUTTON_H/2, BUTTON_X+BUTTON_W/2, BUTTON_Y+BUTTON_H/2);
 					ili9488_set_foreground_color(COLOR_CONVERT(COLOR_TOMATO));
@@ -363,12 +358,11 @@ void draw_button(uint32_t clicked) {
 					start = true;
 					last_state = clicked;
 					ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
-					ili9488_draw_filled_rectangle(25,25,25+leftarrow.width,25+leftarrow.height);
+					ili9488_draw_filled_rectangle(BACK_X,BACK_Y,BACK_X+leftarrow.width,BACK_Y+leftarrow.height);
 				}
 				else{
-					ili9488_draw_pixmap((ILI9488_LCD_WIDTH/2)-25,29,a60e3f50683d3063c36bb8f4f08e9ad0.width,a60e3f50683d3063c36bb8f4f08e9ad0.height,a60e3f50683d3063c36bb8f4f08e9ad0.data);
+					ili9488_draw_pixmap(DOOR_X,DOOR_Y,a60e3f50683d3063c36bb8f4f08e9ad0.width,a60e3f50683d3063c36bb8f4f08e9ad0.height,a60e3f50683d3063c36bb8f4f08e9ad0.data);
 				}
-				
 			} 
 		
 			else if(clicked == 0) {
@@ -395,9 +389,8 @@ uint32_t convert_axis_system_y(uint32_t touch_x) {
 	return ILI9488_LCD_HEIGHT*touch_x/4096;
 }
 
-volatile int c =0;
+volatile int c = 0;
 volatile int clkd;
-volatile int x =0;
 
 void touch_handler(uint32_t tx, uint32_t ty) {
 	if(locked==false){ 
@@ -407,12 +400,12 @@ void touch_handler(uint32_t tx, uint32_t ty) {
 				draw_button(3);
 			}
 			if(tx >=ARROW_X && tx <= ARROW_X+ARROW_W && ty <= ARROW_Y && ty >= ARROW_Y-ARROW_H){
-				x++;
-				display_cicle(x);
+				p_primeiro = p_primeiro->next;
+				display_cicle();
 			}
 			if(tx <=ILI9488_LCD_WIDTH && tx >= ILI9488_LCD_WIDTH-ARROW_W && ty <= ARROW_Y && ty >= ARROW_Y-ARROW_H){
-				x--;
-				display_cicle(x);
+				p_primeiro = p_primeiro->previous;
+				display_cicle();
 			}			
 		}
 		
@@ -429,15 +422,14 @@ void touch_handler(uint32_t tx, uint32_t ty) {
 			}
 			//Botao de voltar
 			
-			if(tx>=25 && ty >= 25 && tx <= 25+leftarrow.width && ty <=25+leftarrow.height && (start==false)){
-				//start=false;
+			if(tx>=BACK_X && ty >= BACK_Y && tx <= BACK_X+leftarrow.width && ty <=BACK_Y+leftarrow.height && (start==false)){
 				selection=true;
 				draw_button(3);
 			}
 		}
 	}
 	
-	if(tx >=275 && tx <= 315 && ty >= 25 && ty <= 50) { // Botao do Lock
+	if(tx >=250 && tx <= 300 && ty >= 25 && ty <= 75) { // Botao do Lock
 		c++;
 		if(c%2!=0){
 			if (locked){
@@ -511,6 +503,8 @@ void crono(int tempo){
 			delay_s(1);
 			start=false;
 			selection=true;
+			last_state = 0;
+
 			draw_button(3);
 		}
 	}
@@ -539,10 +533,13 @@ int main(void){
 	stdio_serial_init(USART_SERIAL_EXAMPLE, &usart_serial_options);
 
 	printf("\n\rmaXTouch data USART transmitter\n\r");
-	
-	t_ciclo *p_primeiro = initMenuOrder();
-	
+		
 	f_rtt_alarme = true;
+	 p_primeiro = initMenuOrder();
+
+	//p_primeiro = initMenuOrder();
+
+	display_cicle();
 
 	while (true) {
 		if(f_rtt_alarme){
@@ -558,7 +555,7 @@ int main(void){
 			if (mxt_is_message_pending(&device)) {
 				mxt_handler(&device);
 			}
-			crono(1);	
+			crono(((p_primeiro->enxagueTempo)*(p_primeiro->enxagueQnt))+p_primeiro->centrifugacaoTempo);	
 		}
 		//pmc_sleep(SAM_PM_SMODE_SLEEP_WFI);
 	}
