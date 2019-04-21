@@ -57,7 +57,6 @@ t_ciclo *initMenuOrder(){
 }
 
 t_ciclo *cicle ;
-//cicle = initMenuOrder();
 
  
 // Variaveis boobleanas para indicar os estados
@@ -253,6 +252,10 @@ void clear_LCD(int a, int b){
 }
 
 void display_cicle(void){
+	
+	//cicle = initMenuOrder();
+
+	
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 	ili9488_draw_filled_rectangle(ARROW_X+ARROW_W, BOX_Y, ILI9488_LCD_WIDTH-ARROW_W, BOX_H);
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
@@ -263,6 +266,7 @@ void display_cicle(void){
 	ili9488_draw_string(LABEL_X, LABEL_Y,  cicle->nome);
 	
 }
+
 void select_screen(void){
 
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
@@ -502,9 +506,7 @@ int main(void){
 	sysclk_init(); /* Initialize system clocks */
 	board_init();  /* Initialize board */
 	configure_lcd();
-	
-	//cicle = initMenuOrder();
-	
+		
 	select_screen();
 	
 	//draw_button(0);

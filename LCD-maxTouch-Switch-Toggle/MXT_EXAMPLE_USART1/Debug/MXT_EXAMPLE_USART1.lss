@@ -6386,6 +6386,7 @@ void display_cicle(void){
   402540:	004011dd 	.word	0x004011dd
 
 00402544 <select_screen>:
+
 void select_screen(void){
   402544:	b510      	push	{r4, lr}
   402546:	b082      	sub	sp, #8
