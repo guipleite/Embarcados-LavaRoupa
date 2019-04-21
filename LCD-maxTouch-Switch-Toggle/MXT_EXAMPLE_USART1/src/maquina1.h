@@ -1,6 +1,16 @@
 #ifndef MAQUINA1
 #define MAQUINA1
 
+
+
+typedef struct {
+	const uint8_t *data;
+	uint16_t width;
+	uint16_t height;
+	uint8_t dataSize;
+} tImage;
+
+
 #include "_ionicons_svg_md-lock.h"
 #include "_ionicons_svg_md-unlock.h"
 #include "a60e3f50683d3063c36bb8f4f08e9ad0.h";
@@ -45,6 +55,11 @@ const uint32_t BACK_Y = 25;
 const uint32_t DOOR_X = (ILI9488_LCD_WIDTH/2)-25;
 const uint32_t DOOR_Y = 29;
 
+const uint32_t CLOCK_X = 40;
+const uint32_t CLOCK_Y = 400;
+
+const uint32_t WARN_X = 5;
+const uint32_t WARN_Y = 455;
 
 typedef struct ciclo t_ciclo;
 
@@ -58,7 +73,7 @@ struct ciclo{
 	char bubblesOn;          // smart bubbles on (???)
 	t_ciclo *previous;
 	t_ciclo *next;
-	tImage *img;
+	tImage *image;
 };
 
 t_ciclo c_rapido = {.nome = "Rapido",
@@ -68,7 +83,7 @@ t_ciclo c_rapido = {.nome = "Rapido",
 	.centrifugacaoTempo = 5,
 	.heavy = 0,
 	.bubblesOn = 1,
-	.img = &fast
+	.image = &fast
 };
 
 t_ciclo c_diario = {.nome = "Diario",
@@ -78,7 +93,7 @@ t_ciclo c_diario = {.nome = "Diario",
 	.centrifugacaoTempo = 8,
 	.heavy = 0,
 	.bubblesOn = 1,
-	.img = &image_data_washingmachineicon22
+	.image = &image_data_washingmachineicon22
 };
 
 t_ciclo c_pesado = {.nome = "Pesado",
@@ -88,7 +103,7 @@ t_ciclo c_pesado = {.nome = "Pesado",
 	.centrifugacaoTempo = 10,
 	.heavy = 1,
 	.bubblesOn = 1,
-	.img = &image_data_kilogramsweight
+	.image = &image_data_kilogramsweight
 };
 
 t_ciclo c_enxague = {.nome = "Enxague",
@@ -98,7 +113,7 @@ t_ciclo c_enxague = {.nome = "Enxague",
 	.centrifugacaoTempo = 0,
 	.heavy = 0,
 	.bubblesOn = 0,
-	.img = &image_data_WashingIcon300x280
+	.image = &image_data_WashingIcon300x280
 };
 
 t_ciclo c_centrifuga = {.nome = "Centrifuga",
@@ -108,7 +123,7 @@ t_ciclo c_centrifuga = {.nome = "Centrifuga",
 	.centrifugacaoTempo = 10,
 	.heavy = 0,
 	.bubblesOn = 0,
-	.img = &centrifuge
+	.image = &centrifuge
 };
 
 t_ciclo *initMenuOrder();
