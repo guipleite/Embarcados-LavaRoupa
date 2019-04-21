@@ -93,7 +93,7 @@ t_ciclo c_diario = {.nome = "Diario",
 	.centrifugacaoTempo = 8,
 	.heavy = 0,
 	.bubblesOn = 1,
-	.image = &image_data_washingmachineicon22
+	.image = &washingmachineicon22
 };
 
 t_ciclo c_pesado = {.nome = "Pesado",
@@ -103,7 +103,7 @@ t_ciclo c_pesado = {.nome = "Pesado",
 	.centrifugacaoTempo = 10,
 	.heavy = 1,
 	.bubblesOn = 1,
-	.image = &image_data_kilogramsweight
+	.image = &kilogramsweight
 };
 
 t_ciclo c_enxague = {.nome = "Enxague",
@@ -113,7 +113,7 @@ t_ciclo c_enxague = {.nome = "Enxague",
 	.centrifugacaoTempo = 0,
 	.heavy = 0,
 	.bubblesOn = 0,
-	.image = &image_data_WashingIcon300x280
+	.image =  &WashingIcon300x280
 };
 
 t_ciclo c_centrifuga = {.nome = "Centrifuga",
@@ -126,6 +126,6 @@ t_ciclo c_centrifuga = {.nome = "Centrifuga",
 	.image = &centrifuge
 };
 
-t_ciclo *initMenuOrder();
+//t_ciclo *initMenuOrder();
 
 #endif

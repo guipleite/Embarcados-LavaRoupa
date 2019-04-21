@@ -1,9 +1,8 @@
 /**
  * 5 semestre - Eng. da Computa??o - Insper
-  ** APS 2
   ** Entrega realizada por:
   ** 
-  **  - Guilherme Leite - guilhermepl3@al.insper.edu.br-
+  **  - Guilherme Leite guilhermepl3@al.insper.edu.br-
   **
   ** 
  **/
@@ -264,9 +263,9 @@ void display_cicle(void){
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 	uint8_t stingLCD[256];
 	
-	ili9488_draw_pixmap(ICON_X,ICON_Y,100,100,c_rapido.image->data);
+	ili9488_draw_pixmap(ICON_X,ICON_Y,100,100,cicle->image->data);
 	
-	ili9488_draw_string(LABEL_X, LABEL_Y,  c_rapido.nome);
+	ili9488_draw_string(LABEL_X, LABEL_Y,  cicle->nome);
 }
 
 void select_screen(void){
@@ -301,12 +300,12 @@ void draw_button(uint32_t clicked) {
 			ili9488_draw_pixmap(LOCK_X,LOCK_Y,_ionicons_svg_mdunlock.width,_ionicons_svg_mdunlock.height,_ionicons_svg_mdunlock.data);
 
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
-			ili9488_draw_string(LABEL_X, LABEL_Y+10,  c_rapido.nome);
+			ili9488_draw_string(LABEL_X, LABEL_Y+10,  cicle->nome);
 
 		}
 		else {	
 			ili9488_draw_pixmap(BACK_X,BACK_Y,leftarrow.width,leftarrow.height,leftarrow.data);
-			ili9488_draw_string(LABEL_X, LABEL_Y+10,  c_rapido.nome);
+			ili9488_draw_string(LABEL_X, LABEL_Y+10,  cicle->nome);
 
 			if (clicked==3){ //Voltando de um estado 
 				ili9488_draw_pixmap(BACK_X,BACK_Y,leftarrow.width,leftarrow.height,leftarrow.data);;
@@ -318,7 +317,7 @@ void draw_button(uint32_t clicked) {
 
 				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 				ili9488_draw_filled_rectangle(BUTTON_X-BUTTON_W/2, BUTTON_Y-BUTTON_H/2, BUTTON_X+BUTTON_W/2, BUTTON_Y+BUTTON_H/2);
-				ili9488_draw_string(LABEL_X, LABEL_Y+10,  c_rapido.nome);
+				ili9488_draw_string(LABEL_X, LABEL_Y+10,  cicle->nome);
 
 				
 				if(last_state==1) {
@@ -378,12 +377,14 @@ uint32_t convert_axis_system_y(uint32_t touch_x) {
 }
 
 volatile int c = 0;
+volatile int c2 = 0;
+
 volatile int clkd;
 
 volatile int sig = 0;
 
 void start_wash(int sig){
-	if (sig){
+	if (sig==1){
 		pio_clear(LED_PIO,LED_PIO_IDX_MASK); // Aciona as interfaces da maquina
 	}
 	else{
@@ -393,16 +394,23 @@ void start_wash(int sig){
 
 void touch_handler(uint32_t tx, uint32_t ty) {
 	if(selection==true){
-		if(tx >=100 && tx <= ILI9488_LCD_WIDTH-100 && ty >= 325 && ty <= 375) {
+		if(tx >=START_X && tx <= ILI9488_LCD_WIDTH-START_X && ty >= START_Y && ty <= START_Y+comeca.height) {
 			selection=false;
 			draw_button(3);
 		}
-		if(tx >=ARROW_X && tx <= ARROW_X+ARROW_W && ty <= ARROW_Y && ty >= ARROW_Y-ARROW_H){
-			cicle = c_rapido.next;
-			display_cicle();
-		}
-		if(tx <=ILI9488_LCD_WIDTH && tx >= ILI9488_LCD_WIDTH-ARROW_W && ty <= ARROW_Y && ty >= ARROW_Y-ARROW_H){
-			cicle = c_rapido.previous;
+		if(ty <= ARROW_Y && ty >= ARROW_Y-ARROW_H){
+			if(tx >=ARROW_X && tx <= ARROW_X+ARROW_W  ){
+				c2++;
+				if(c2%2!=0){
+					cicle = cicle->next;
+				}
+			}
+			if(tx <=ILI9488_LCD_WIDTH && tx >= ILI9488_LCD_WIDTH-ARROW_W ){
+				c2++;
+				if(c2%2!=0){
+					cicle = cicle->previous;
+				}	
+			}
 			display_cicle();
 		}
 	}
@@ -430,7 +438,7 @@ void touch_handler(uint32_t tx, uint32_t ty) {
 			}
 		}
 	
-		if(tx >=250 && tx <= 300 && ty >= 25 && ty <= 75) { // Botao do Lock
+		if(tx >=LOCK_X && tx <= LOCK_X+_ionicons_svg_mdunlock.width && ty >= LOCK_Y && ty <= LOCK_Y+_ionicons_svg_mdunlock.height) { // Botao do Lock
 			c++;
 			if(c%2!=0){
 				if (locked){
@@ -473,7 +481,6 @@ void mxt_handler(struct mxt_device *device)
 		sprintf(buf, "Nr: %1d, X:%4d, Y:%4d, Status:0x%2x conv X:%3d Y:%3d\n\r",
 				touch_event.id, touch_event.x, touch_event.y,
 				touch_event.status, conv_x, conv_y);
-
 		touch_handler(conv_x, conv_y);
 
 		/* Add the new string to the string buffer */
@@ -499,7 +506,7 @@ void crono(int tempo){
 		rtc_get_time(RTC, &hour, &minu, &seg);
 		sprintf(stingLCD, "%d :%d de %d min.",minu,seg,tempo);
 		ili9488_draw_string(CLOCK_X, CLOCK_Y, stingLCD);
-		c=0;		
+				
 		if(minu == tempo){
 			sprintf(stingLCD, "ACABOU A LAVAGEM");
 			ili9488_draw_string(WARN_X, WARN_Y, stingLCD);
@@ -553,7 +560,7 @@ int main(void){
 
 	printf("\n\rmaXTouch data USART transmitter\n\r");
 		
-	//cicle = initMenuOrder();
+	cicle = initMenuOrder();
 		
 	select_screen();
 	
@@ -576,8 +583,8 @@ int main(void){
 				mxt_handler(&device);
 			}
 
-			crono((((c_rapido.enxagueTempo)*(c_rapido.enxagueQnt))+c_rapido.centrifugacaoTempo)+
-			(0.2*c_rapido.heavy*(((c_rapido.enxagueTempo)*(c_rapido.enxagueQnt))+c_rapido.centrifugacaoTempo)));	
+			crono((((cicle->enxagueTempo)*(cicle->enxagueQnt))+cicle->centrifugacaoTempo)+
+			(0.2*cicle->heavy*(((cicle->enxagueTempo)*(cicle->enxagueQnt))+cicle->centrifugacaoTempo)));	
 		}
 		//pmc_sleep(SAM_PM_SMODE_SLEEP_WFI);
 	}
