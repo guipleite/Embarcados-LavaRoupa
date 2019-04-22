@@ -72,7 +72,7 @@ struct ciclo{
 	char heavy;              // modo pesado de lavagem
 	char bubblesOn;          // smart bubbles on (???)
 	t_ciclo *previous;
-	t_ciclo *next;
+    t_ciclo *next;
 	tImage *image;
 };
 

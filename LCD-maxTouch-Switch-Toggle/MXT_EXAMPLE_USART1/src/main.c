@@ -2,7 +2,7 @@
  * 5 semestre - Eng. da Computa??o - Insper
   ** Entrega realizada por:
   ** 
-  **  - Guilherme Leite guilhermepl3@al.insper.edu.br-
+  **  - Guilherme Leite - guilhermepl3@al.insper.edu.br
   **
   ** 
  **/
@@ -263,7 +263,18 @@ void display_cicle(void){
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 	uint8_t stingLCD[256];
 	
-	ili9488_draw_pixmap(ICON_X,ICON_Y,100,100,cicle->image->data);
+	ili9488_draw_pixmap(ICON_X,ICON_Y-50,100,100,cicle->image->data);
+	
+	sprintf(stingLCD,"Tempo enxague %d\nQuant. enxagues %d\nRPM centrifug.%d\nTempo centrifug.%d\nModo Pesado %d\nBolhas %d",
+			cicle->enxagueTempo,
+			cicle->enxagueQnt,
+			cicle->centrifugacaoRPM,
+			cicle->centrifugacaoTempo,
+			cicle->heavy,
+			cicle->bubblesOn
+			);
+	ili9488_draw_string(ICON_X-50, ICON_Y+50, stingLCD);
+	
 	
 	ili9488_draw_string(LABEL_X, LABEL_Y,  cicle->nome);
 }
@@ -515,8 +526,7 @@ void crono(int tempo){
 			selection=true;
 			start_wash(0);
 			last_state = 0;
-
-			display_cicle();
+			select_screen();
 		}
 	}
 	else{return;}
