@@ -1,6 +1,6 @@
 # Embarcados-LavaRoupa
 
-interface de uma maquina de lavar roupa
+Interface de uma máquina de lavar roupa usando o microcontrolador SAM E70 e uma tela LCD touch
 
 
 
