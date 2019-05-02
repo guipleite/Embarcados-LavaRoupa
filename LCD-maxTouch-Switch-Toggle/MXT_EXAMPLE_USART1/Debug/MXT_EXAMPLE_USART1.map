@@ -8563,13 +8563,13 @@ LOAD c:/program files (x86)/atmel/studio/7.0/toolchain/arm/arm-gnu-toolchain/bin
                 0x00402810       0x20 src/main.o
                 0x00402810                start_wash
  .text.touch_handler
-                0x00402830      0x158 src/main.o
+                0x00402830      0x15c src/main.o
                 0x00402830                touch_handler
  .text.mxt_handler
-                0x00402988       0xc4 src/main.o
-                0x00402988                mxt_handler
- .text.crono    0x00402a4c       0xd0 src/main.o
-                0x00402a4c                crono
+                0x0040298c       0xc4 src/main.o
+                0x0040298c                mxt_handler
+ .text.crono    0x00402a50       0xcc src/main.o
+                0x00402a50                crono
  .text.get_time
                 0x00402b1c       0x54 src/main.o
                 0x00402b1c                get_time
@@ -9405,7 +9405,7 @@ OUTPUT(MXT_EXAMPLE_USART1.elf elf32-littlearm)
  .debug_abbrev  0x00003ebe      0x264 src/ASF/sam/utils/syscalls/gcc/syscalls.o
  .debug_abbrev  0x00004122      0x53e src/main.o
 
-.debug_loc      0x00000000     0x99df
+.debug_loc      0x00000000     0x99c9
  .debug_loc     0x00000000      0xfd8 src/ASF/common/components/touch/mxt/mxt_device_1.o
  .debug_loc     0x00000fd8      0x183 src/ASF/common/services/clock/same70/sysclk.o
  .debug_loc     0x0000115b      0x2a7 src/ASF/common/services/serial/usart_serial.o
@@ -9425,7 +9425,7 @@ OUTPUT(MXT_EXAMPLE_USART1.elf elf32-littlearm)
  .debug_loc     0x00007c0c      0xf35 src/ASF/sam/drivers/usart/usart.o
  .debug_loc     0x00008b41       0x77 src/ASF/sam/utils/cmsis/same70/source/templates/gcc/startup_same70.o
  .debug_loc     0x00008bb8       0xfd src/ASF/sam/utils/syscalls/gcc/syscalls.o
- .debug_loc     0x00008cb5      0xd2a src/main.o
+ .debug_loc     0x00008cb5      0xd14 src/main.o
 
 .debug_aranges  0x00000000      0xef0
  .debug_aranges

@@ -47,9 +47,10 @@ struct ili9488_opt_t g_ili9488_display_opt;
 
 // Variaveis boobleanas para indicar os estados
 volatile Bool f_rtt_alarme = false;
-volatile Bool start = false;
-volatile Bool locked = false;
-volatile Bool selection = true;
+
+ Bool start = false;
+ Bool locked = false;
+ Bool selection = true;
 
 int c ;
 int c2;
@@ -92,9 +93,6 @@ void RTT_Handler(void){
 
 	/* Get RTT status */
 	ul_status = rtt_get_status(RTT);
-
-	/* IRQ due to Time has changed */
-	if ((ul_status & RTT_SR_RTTINC) == RTT_SR_RTTINC) {  }
 
 	/* IRQ due to Alarm */
 	if ((ul_status & RTT_SR_ALMS) == RTT_SR_ALMS) {
