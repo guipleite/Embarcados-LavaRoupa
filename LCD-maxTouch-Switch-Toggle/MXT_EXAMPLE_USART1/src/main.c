@@ -4,8 +4,7 @@
   ** 
   **  - Guilherme Leite - guilhermepl3@al.insper.edu.br
   **
-  ** 
- **/
+  **/
 
 #include <asf.h>
 #include <stdlib.h>
@@ -46,6 +45,20 @@ uint32_t hour, minu, seg;
 // LCD struct
 struct ili9488_opt_t g_ili9488_display_opt;
 
+// Variaveis boobleanas para indicar os estados
+volatile Bool f_rtt_alarme = false;
+volatile Bool start = false;
+volatile Bool locked = false;
+volatile Bool selection = true;
+
+int c ;
+int c2;
+int clkd;
+
+int total_time;
+
+uint32_t last_state = 255; // undefineds
+
 /**
  * Inicializa ordem do menu
  * retorna o primeiro ciclo que
@@ -71,12 +84,6 @@ t_ciclo *initMenuOrder(){
 
 	return(&c_diario);
 }
-
-// Variaveis boobleanas para indicar os estados
-volatile Bool f_rtt_alarme = false;
-volatile Bool start = false;
-volatile Bool locked = false;
-volatile Bool selection = true;
 
 static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses);
 
@@ -293,8 +300,6 @@ void select_screen(void){
 		
 }
 
-volatile static uint32_t last_state = 255; // undefineds
-
 void draw_button(uint32_t clicked) {
 	
 	uint8_t stingLCD[256];
@@ -386,13 +391,6 @@ uint32_t convert_axis_system_y(uint32_t touch_x) {
 	// saida: 0 - 320
 	return ILI9488_LCD_HEIGHT*touch_x/4096;
 }
-
-volatile int c = 0;
-volatile int c2 = 0;
-
-volatile int clkd;
-
-volatile int sig = 0;
 
 void start_wash(int sig){
 	if (sig==1){
@@ -509,7 +507,7 @@ void mxt_handler(struct mxt_device *device)
 }
 
 void crono(int tempo){
-	clear_LCD(390,415);
+	clear_LCD(TIME_Y0,TIME_Y1);
 
 	if (start==true){
 		uint8_t stingLCD[256];
@@ -530,6 +528,14 @@ void crono(int tempo){
 		}
 	}
 	else{return;}
+}
+int get_time(){
+	total_time = ((cicle->enxagueTempo)*(cicle->enxagueQnt))+cicle->centrifugacaoTempo;
+	
+	if (cicle->heavy){
+		total_time*=1.2;
+	}
+	return total_time;
 }
 
 void init (){
@@ -592,11 +598,10 @@ int main(void){
 			if (mxt_is_message_pending(&device)) {
 				mxt_handler(&device);
 			}
+			int tm = get_time(cicle);
 
-			crono((((cicle->enxagueTempo)*(cicle->enxagueQnt))+cicle->centrifugacaoTempo)+
-			(0.2*cicle->heavy*(((cicle->enxagueTempo)*(cicle->enxagueQnt))+cicle->centrifugacaoTempo)));	
+			crono(tm);
 		}
-		//pmc_sleep(SAM_PM_SMODE_SLEEP_WFI);
 	}
 	return 0;
 }

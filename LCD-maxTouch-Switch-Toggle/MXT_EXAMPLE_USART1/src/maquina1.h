@@ -61,6 +61,9 @@ const uint32_t CLOCK_Y = 400;
 const uint32_t WARN_X = 5;
 const uint32_t WARN_Y = 455;
 
+const uint32_t TIME_Y0 = 390;
+const uint32_t TIME_Y1 = 415;
+
 typedef struct ciclo t_ciclo;
 
 struct ciclo{
